@@ -1,10 +1,47 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
 import { colors, theme } from '../theme/theme';
-import { mockCurrentWorkout } from '../data/mockData';
 
 export default function WorkoutScreen() {
-  const [workout, setWorkout] = useState(mockCurrentWorkout);
+  const [workout, setWorkout] = useState([]);
+
+  const addExercise = () => {
+    setWorkout([
+      ...workout,
+      {
+        id: Date.now().toString(),
+        name: '',
+        sets: [
+          { id: Date.now().toString() + 'set', setNumber: 1, reps: '', weight: '', completed: false }
+        ]
+      }
+    ]);
+  };
+
+  const addSet = (exerciseIndex) => {
+    const newWorkout = [...workout];
+    const exercise = newWorkout[exerciseIndex];
+    exercise.sets.push({
+      id: Date.now().toString(),
+      setNumber: exercise.sets.length + 1,
+      reps: '',
+      weight: '',
+      completed: false
+    });
+    setWorkout(newWorkout);
+  };
+
+  const updateExerciseName = (exerciseIndex, text) => {
+    const newWorkout = [...workout];
+    newWorkout[exerciseIndex].name = text;
+    setWorkout(newWorkout);
+  };
+
+  const updateSet = (exerciseIndex, setIndex, field, value) => {
+    const newWorkout = [...workout];
+    newWorkout[exerciseIndex].sets[setIndex][field] = value;
+    setWorkout(newWorkout);
+  };
 
   const toggleSet = (exerciseIndex, setIndex) => {
     const newWorkout = [...workout];
@@ -12,25 +49,65 @@ export default function WorkoutScreen() {
     setWorkout(newWorkout);
   };
 
+  const removeExercise = (exerciseIndex) => {
+    const newWorkout = workout.filter((_, index) => index !== exerciseIndex);
+    setWorkout(newWorkout);
+  };
+
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.headerTitle}>Entrenamiento Activo 💀</Text>
       
+      {workout.length === 0 && (
+        <Text style={styles.emptyText}>No hay hechizos en tu ritual de hoy. ¡Añade uno para empezar!</Text>
+      )}
+
       {workout.map((item, eIndex) => (
-        <View key={eIndex} style={styles.exerciseCard}>
-          <Text style={styles.exerciseName}>{item.exercise.image} {item.exercise.name}</Text>
+        <View key={item.id} style={styles.exerciseCard}>
+          <View style={styles.exerciseHeaderRow}>
+            <TextInput
+              style={styles.exerciseNameInput}
+              placeholder="Ej. Sentadillas de Bruja..."
+              placeholderTextColor={colors.textSecondary}
+              value={item.name}
+              onChangeText={(text) => updateExerciseName(eIndex, text)}
+            />
+            <TouchableOpacity onPress={() => removeExercise(eIndex)} style={styles.removeBtn}>
+              <Text style={styles.removeBtnText}>X</Text>
+            </TouchableOpacity>
+          </View>
+
           <View style={styles.tableHeader}>
-            <Text style={styles.tableHeaderText}>Serie</Text>
+            <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>Serie</Text>
             <Text style={styles.tableHeaderText}>Reps</Text>
             <Text style={styles.tableHeaderText}>Peso</Text>
-            <Text style={styles.tableHeaderText}>Hecho</Text>
+            <Text style={[styles.tableHeaderText, { flex: 0.5 }]}>Hecho</Text>
           </View>
           
           {item.sets.map((set, sIndex) => (
-            <View key={sIndex} style={[styles.setRow, set.completed && styles.setRowCompleted]}>
-              <Text style={styles.setRowText}>{set.set}</Text>
-              <Text style={styles.setRowText}>{set.reps}</Text>
-              <Text style={styles.setRowText}>{set.weight}</Text>
+            <View key={set.id} style={[styles.setRow, set.completed && styles.setRowCompleted]}>
+              <Text style={[styles.setRowText, { flex: 0.5 }]}>{set.setNumber}</Text>
+              
+              <TextInput
+                style={styles.setRowInput}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor={colors.textSecondary}
+                value={set.reps}
+                onChangeText={(val) => updateSet(eIndex, sIndex, 'reps', val)}
+                editable={!set.completed}
+              />
+              
+              <TextInput
+                style={styles.setRowInput}
+                keyboardType="numeric"
+                placeholder="0 kg"
+                placeholderTextColor={colors.textSecondary}
+                value={set.weight}
+                onChangeText={(val) => updateSet(eIndex, sIndex, 'weight', val)}
+                editable={!set.completed}
+              />
+
               <TouchableOpacity 
                 style={[styles.checkbox, set.completed && styles.checkboxCompleted]} 
                 onPress={() => toggleSet(eIndex, sIndex)}
@@ -39,12 +116,24 @@ export default function WorkoutScreen() {
               </TouchableOpacity>
             </View>
           ))}
+
+          <TouchableOpacity style={styles.addSetButton} onPress={() => addSet(eIndex)}>
+            <Text style={styles.addSetButtonText}>+ Añadir Serie</Text>
+          </TouchableOpacity>
         </View>
       ))}
 
-      <TouchableOpacity style={styles.finishButton}>
-        <Text style={styles.finishButtonText}>Finalizar Ritual 🩸</Text>
+      <TouchableOpacity style={styles.addExerciseButton} onPress={addExercise}>
+        <Text style={styles.addExerciseButtonText}>+ Añadir Ejercicio 🕸️</Text>
       </TouchableOpacity>
+
+      {workout.length > 0 && (
+        <TouchableOpacity style={styles.finishButton}>
+          <Text style={styles.finishButtonText}>Finalizar Ritual 🩸</Text>
+        </TouchableOpacity>
+      )}
+      
+      <View style={styles.bottomPadding} />
     </ScrollView>
   );
 }
@@ -65,6 +154,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
+  emptyText: {
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontSize: 16,
+    marginBottom: 20,
+    fontStyle: 'italic',
+  },
   exerciseCard: {
     backgroundColor: colors.surface,
     borderRadius: 12,
@@ -74,11 +170,29 @@ const styles = StyleSheet.create({
     borderColor: colors.secondary,
     ...theme.shadows.neonPurple,
   },
-  exerciseName: {
+  exerciseHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  exerciseNameInput: {
+    flex: 1,
     fontSize: 18,
     color: colors.secondary,
     fontWeight: 'bold',
-    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    paddingVertical: 5,
+  },
+  removeBtn: {
+    marginLeft: 10,
+    padding: 5,
+    backgroundColor: colors.danger,
+    borderRadius: 5,
+  },
+  removeBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
   tableHeader: {
     flexDirection: 'row',
@@ -111,6 +225,17 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
   },
+  setRowInput: {
+    flex: 1,
+    color: colors.text,
+    textAlign: 'center',
+    backgroundColor: '#1a1a1a',
+    marginHorizontal: 5,
+    paddingVertical: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   checkbox: {
     width: 30,
     height: 30,
@@ -119,8 +244,9 @@ const styles = StyleSheet.create({
     borderColor: colors.textSecondary,
     justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
+    flex: 0.5,
     maxWidth: 40,
+    marginLeft: 10,
   },
   checkboxCompleted: {
     backgroundColor: colors.accent,
@@ -131,13 +257,36 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  addSetButton: {
+    marginTop: 10,
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  addSetButtonText: {
+    color: colors.textSecondary,
+    fontWeight: 'bold',
+  },
+  addExerciseButton: {
+    backgroundColor: colors.surface,
+    borderColor: colors.accent,
+    borderWidth: 1,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderStyle: 'dashed',
+  },
+  addExerciseButtonText: {
+    color: colors.accent,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   finishButton: {
     backgroundColor: colors.danger,
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 40,
+    marginBottom: 20,
     ...theme.shadows.neonOrange,
     shadowColor: colors.danger,
   },
@@ -145,5 +294,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontWeight: 'bold',
     fontSize: 18,
+  },
+  bottomPadding: {
+    height: 40,
   }
 });
