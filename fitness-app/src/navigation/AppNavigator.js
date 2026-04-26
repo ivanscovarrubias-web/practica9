@@ -26,14 +26,14 @@ function HistoryStack() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen 
-        name="HistoryMain" 
-        component={HistoryScreen} 
+      <Stack.Screen
+        name="HistoryMain"
+        component={HistoryScreen}
         options={{ title: 'Historial', headerShown: false }}
       />
-      <Stack.Screen 
-        name="HistoryDetail" 
-        component={HistoryDetailScreen} 
+      <Stack.Screen
+        name="HistoryDetail"
+        component={HistoryDetailScreen}
         options={{ title: 'Detalle del Ritual' }}
       />
     </Stack.Navigator>
